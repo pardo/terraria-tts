@@ -100,14 +100,29 @@ accepts Piper's 22.05 kHz 16-bit mono PCM. Voice assignment is stable across
 languages, as designed — the same user keeps its rate/variation while the
 speaker id is drawn from whichever model is loaded.
 
+**First-run install verified** against the real `data-v1` release, by renaming
+`...\tModLoader\ChatVoice\` aside and relaunching. Whole thing took 6 seconds:
+
+```
+First-time setup: downloading 151 MB of speech data ...
+speech engine: 25% / 50% / 75% / 100%   -> Extracting -> installed
+voice models:  25% / 50% / 75% / 100%   -> Extracting -> installed
+Setup complete - chat will now be read aloud.
+```
+
+Both SHA-256 checks passed, the `.download` work directory was cleaned up, all
+365 `espeak-ng-data` files landed correctly, and `Main.QueueMainThreadAction`
+(risk 6) worked — that is how those notices reached chat.
+
+To re-test it, rename the data folder aside again; the mod only downloads what
+is missing.
+
 **Still not verified:**
 
-- `Main.QueueMainThreadAction` (risk 6) has never been reached.
-- `AssetInstaller` — the first-run downloader — has never run. Its URLs and
-  checksums were verified out-of-band with curl, but the C# path is
-  unexercised: this machine's data folder was populated by the build, so the
-  game has never taken that branch. **This is the path every new player hits**,
-  so test it by renaming `...\tModLoader\ChatVoice\` aside and relaunching.
+- Nothing known. Keep an eye on the mid-session pickup path — the mod starts
+  with no voices, the download completes while it is running, and `GetVoice`
+  has to load the model on a later message rather than having cached "missing".
+  That is what the `AssetInstaller.IsInstalling` guard in `GetVoice` is for.
 
 ## Known risk points, in the order they'll probably bite
 
