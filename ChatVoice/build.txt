@@ -1,0 +1,4 @@
+displayName = Chat Voice (Piper TTS)
+author = unpardos
+version = 0.3
+side = Client

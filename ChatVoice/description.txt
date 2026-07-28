@@ -1,0 +1,13 @@
+Reads chat messages out loud using Piper, running locally on your CPU.
+
+- Every player gets a consistent voice, derived from a hash of their username.
+- English and Spanish messages are detected automatically.
+- Client-side only. Other players do not need the mod.
+
+First launch downloads about 190 MB of speech data (the Piper engine and the
+voice models) from the mod's GitHub release, because tModLoader cannot load
+native code from inside a .tmod. It lands in
+Documents\My Games\Terraria\tModLoader\ChatVoice\ and only happens once.
+After that everything runs offline - no text ever leaves your machine.
+
+GPL-3.0. Source: https://github.com/pardo/terraria-tts

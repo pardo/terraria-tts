@@ -1,0 +1,27 @@
+# local agent/editor state
+.claude/
+
+# tModLoader / .NET
+bin/
+obj/
+*.user
+ChatVoice/bin/
+ChatVoice/obj/
+
+# native build output and models - fetched, not committed
+native/
+voices/
+*.onnx
+*.onnx.json
+*.dll
+*.so
+*.dylib
+espeak-ng-data/
+
+# release artifacts - built by tools\make-release.ps1, published to GitHub Releases
+release/
+*.tmod
+
+# scratch
+*.wav
+*.zip

@@ -1,0 +1,66 @@
+Mods: {
+	ChatVoice: {
+		Configs: {
+			ChatVoiceConfig: {
+				DisplayName: Chat Voice Settings
+
+				Enabled: {
+					Label: Enabled
+					Tooltip: Turn chat narration on or off.
+				}
+
+				Volume: {
+					Label: Volume
+					Tooltip: Playback volume for spoken chat.
+				}
+
+				ForceEnglish: {
+					Label: Always use English
+					Tooltip:
+						'''
+						Skip language detection and read everything with the
+						English voice. Useful if nobody in your group speaks
+						Spanish and you would rather not load the second model.
+						'''
+				}
+
+				ReadOwnMessages: {
+					Label: Read my own messages
+					Tooltip: Also speak the lines you type yourself.
+				}
+
+				ReadSystemMessages: {
+					Label: Read server messages
+					Tooltip: Join/leave notices, boss spawns and other broadcasts with no player author.
+				}
+
+				MaxCharacters: {
+					Label: Maximum characters
+					Tooltip: Longer messages are truncated instead of read in full.
+				}
+
+				PerPlayerCooldown: {
+					Label: Per-player cooldown (seconds)
+					Tooltip: Ignore further messages from the same player within this window. 0 disables it.
+				}
+
+				MaxQueue: {
+					Label: Maximum queued lines
+					Tooltip: Extra messages are dropped when the queue is full, so speech never lags far behind chat.
+				}
+
+				Verbose: {
+					Label: Log to client.log
+					Tooltip: Write diagnostics for every line. Useful when things are not working.
+				}
+			}
+		}
+
+		Commands: {
+			Tts: {
+				Description: Speak a line through Chat Voice.
+				Usage: "/tts [as <username>] <text>  |  /tts install"
+			}
+		}
+	}
+}
