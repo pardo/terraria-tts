@@ -87,16 +87,27 @@ healthy. The empty-audio path now logs a warning instead of returning silently.
 Use `tools\piper-smoketest` before blaming the game for anything like this; it
 reproduces the P/Invoke layer in about a second.
 
+**End-to-end working** as of v0.4. Ordinary chat lines — not just `/tts` — are
+spoken, in both languages, with no warnings:
+
+```
+[notpepe] (es spk=1   rate=1.109 var=0.851) hola pepe como estas
+[notpepe] (en spk=289 rate=1.109 var=0.851) hello this is a test
+```
+
+That confirms the last link too: `SoundEffect(byte[], int, AudioChannels)`
+accepts Piper's 22.05 kHz 16-bit mono PCM. Voice assignment is stable across
+languages, as designed — the same user keeps its rate/variation while the
+speaker id is drawn from whichever model is loaded.
+
 **Still not verified:**
 
-- Whether `SoundEffect(byte[], int, AudioChannels)` actually plays Piper's
-  22.05 kHz 16-bit mono PCM. Synthesis is now known to produce bytes; playback
-  is the next link in the chain and has never succeeded.
 - `Main.QueueMainThreadAction` (risk 6) has never been reached.
-- `AssetInstaller` — the first-run downloader — has never run against a real
-  release. Its URLs and checksums were verified out-of-band with curl, but the
-  C# path is unexercised, and the local data folder is already populated, so
-  the game has never taken that branch.
+- `AssetInstaller` — the first-run downloader — has never run. Its URLs and
+  checksums were verified out-of-band with curl, but the C# path is
+  unexercised: this machine's data folder was populated by the build, so the
+  game has never taken that branch. **This is the path every new player hits**,
+  so test it by renaming `...\tModLoader\ChatVoice\` aside and relaunching.
 
 ## Known risk points, in the order they'll probably bite
 
