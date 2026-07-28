@@ -68,31 +68,45 @@ the Python reference implementation it was ported from.
   English 22.05 kHz mono, Spanish likewise. So espeak-ng, onnxruntime and the
   models are all good, and the sample rate `PiperEngine` assumes is right.
 
-**Still not verified — this is now where the bugs are:**
+**Verified in-game** (tML 2026.5.3.0), which closed most of the risk list:
 
-- **The P/Invoke layer specifically has never run.** The CLI exercises the same
-  DLL through C++, not through .NET marshalling, so every risk point below is
-  still open. This needs the game.
-- `NativeLibrary.SetDllImportResolver` inside a tModLoader mod assembly. Mods
-  load into a custom AssemblyLoadContext; the resolver is registered against
-  `Assembly.GetExecutingAssembly()`, which should be right, but it's untested.
-- Whether `SoundEffect(byte[], int, AudioChannels)` accepts Piper's 22.05 kHz
-  16-bit mono PCM.
+- The MonoMod hook attaches: `Hook Terraria.Chat.ChatHelper::DisplayMessage(
+  NetworkText, Color, byte) added by ChatVoice`. The `byte messageAuthor`
+  signature is still current.
+- `SetDllImportResolver` works from inside tModLoader's AssemblyLoadContext.
+  `piper_create` returns a live handle, and `num_speakers` reads 904 / 2 —
+  matching the model cards exactly, so the regex is right too.
+
+**The bug that made it silent** (fixed): `piper_synthesize_next` returns
+`PIPER_DONE` *on the same call that carries the final audio chunk*, not on a
+later empty one. The loop checked the return code before consuming the chunk,
+so it discarded it. Most chat lines synthesize to a single chunk, so this threw
+away 100% of the audio — with no error, no exception, and a log that looked
+healthy. The empty-audio path now logs a warning instead of returning silently.
+
+Use `tools\piper-smoketest` before blaming the game for anything like this; it
+reproduces the P/Invoke layer in about a second.
+
+**Still not verified:**
+
+- Whether `SoundEffect(byte[], int, AudioChannels)` actually plays Piper's
+  22.05 kHz 16-bit mono PCM. Synthesis is now known to produce bytes; playback
+  is the next link in the chain and has never succeeded.
+- `Main.QueueMainThreadAction` (risk 6) has never been reached.
 - `AssetInstaller` — the first-run downloader — has never run against a real
-  release. Its zip layout and checksums are pinned to assets built by
-  `tools\make-release.ps1`.
+  release. Its URLs and checksums were verified out-of-band with curl, but the
+  C# path is unexercised, and the local data folder is already populated, so
+  the game has never taken that branch.
 
 ## Known risk points, in the order they'll probably bite
 
-1. **`piper_default_synthesize_options` returns a struct by value.** 16 bytes
-   (int + 3 floats), so on Windows x64 it comes back via a hidden pointer. .NET
-   should marshal this correctly for a blittable struct, but struct-by-value
-   returns across P/Invoke are a classic source of silent corruption. If the
-   defaults look like garbage, that's the cause — the workaround is to skip the
-   call and hardcode `noise_scale = 0.333f` for multi-speaker models.
-2. **`PiperAudioChunk` layout.** Transcribed field-for-field from the header,
-   including `bool is_last` as a one-byte C99 bool via `UnmanagedType.I1`. If
-   `IsLast` reads as garbage, the padding assumption is wrong.
+1. ~~**`piper_default_synthesize_options` returns a struct by value.**~~
+   **Resolved — marshals correctly.** `sizeof` is 16 as expected and the values
+   come back as `speaker=0 length=1 noise=0.333 noise_w=0.333`, exactly the
+   documented multi-speaker defaults. Do not hardcode `noise_scale`.
+2. ~~**`PiperAudioChunk` layout.**~~ **Resolved — correct.** `sizeof` is 72,
+   `IsLast` reads as a proper bool, `NumSamples` and `SampleRate` are sane. The
+   `UnmanagedType.I1` padding assumption was right.
 3. **DLL name.** CMake may emit `piper.dll` or `libpiper.dll`. `PiperNative`
    probes both plus the .so/.dylib names. A `DllNotFoundException` means neither
    was found in `native\` — check the real filename first.

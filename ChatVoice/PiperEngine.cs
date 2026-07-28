@@ -264,9 +264,17 @@ namespace ChatVoice
 
 			while (true) {
 				rc = PiperNative.SynthesizeNext(voice.Handle, out PiperNative.PiperAudioChunk chunk);
-				if (rc != PiperNative.PIPER_OK)
-					break;   // PIPER_DONE, or an error - either way we stop
 
+				if (rc < 0) {
+					_mod?.Logger.Warn($"ChatVoice: piper_synthesize_next returned {rc}");
+					break;
+				}
+
+				// PIPER_DONE arrives *with* the final chunk rather than after it,
+				// so the chunk has to be consumed before the return code is
+				// checked. Breaking on it first drops the last sentence of every
+				// message - and since a short chat line is a single chunk, that
+				// silently discarded all of the audio.
 				int count = (int)chunk.NumSamples;
 				if (count > 0 && chunk.Samples != IntPtr.Zero) {
 					sampleRate = chunk.SampleRate > 0 ? chunk.SampleRate : sampleRate;
@@ -287,16 +295,18 @@ namespace ChatVoice
 					pcm.Write(buffer, 0, buffer.Length);
 				}
 
-				if (chunk.IsLast)
+				if (rc == PiperNative.PIPER_DONE || chunk.IsLast)
 					break;
 			}
 
-			if (rc < 0)
-				_mod?.Logger.Warn($"ChatVoice: piper_synthesize_next returned {rc}");
-
 			byte[] data = pcm.ToArray();
-			if (data.Length < 64)
+			if (data.Length < 64) {
+				// Used to be a silent return, which is how the dropped-final-chunk
+				// bug above stayed invisible: no audio, no error, nothing in the log.
+				_mod?.Logger.Warn(
+					$"ChatVoice: synthesis produced no audio ({data.Length} bytes) for: {text}");
 				return null;
+			}
 
 			return new Clip { Pcm16 = data, SampleRate = sampleRate };
 		}

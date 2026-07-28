@@ -59,7 +59,7 @@ Mods: {
 		Commands: {
 			Tts: {
 				Description: Speak a line through Chat Voice.
-				Usage: "/tts [as <username>] <text>  |  /tts install"
+				Usage: /tts [as <username>] <text>  |  /tts install
 			}
 		}
 	}

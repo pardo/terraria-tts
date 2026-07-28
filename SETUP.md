@@ -95,6 +95,58 @@ dotnet build
 `dotnet build -p:BuildMod=false` for a compile-only check when you just want to see
 C# errors.
 
+#### You cannot `dotnet build` while the game has the mod loaded
+
+tModLoader holds `Mods\ChatVoice.tmod` open, and the packing step fails with:
+
+```
+error TML003: Please close tModLoader or disable the mod in-game to build mods directly.
+```
+
+**The dangerous part is what happens next.** The C# compiles fine — only the packing
+fails — so the build looks half-successful, and `Mods\ChatVoice.tmod` is still the
+*previous* build. Restarting the game then loads that stale mod, and you test your old
+code while believing you're testing the fix. This is easy to lose an hour to.
+
+Either close tModLoader before `dotnet build`, or rebuild from inside the game with
+**Workshop → Develop Mods → Chat Voice → Build + Reload**, which works while it's
+running.
+
+**Always confirm which build actually loaded.** Bump `version` in `build.txt`, then
+check the log:
+
+```
+grep "Selected ChatVoice" client.log
+```
+
+It prints the version tModLoader chose. If that isn't the version you just built, you
+are not testing what you think you are.
+
+#### Where the log is
+
+Not in the `Logs` folder next to your saves — that's a shortcut. The real file is in
+the game install:
+
+```
+<steam>\steamapps\common\tModLoader\tModLoader-Logs\client.log
+```
+
+Turn on **Log to client.log** in the mod config for a line per spoken message.
+
+#### Debugging the native layer
+
+`tools\piper-smoketest\` is a standalone console app that reproduces the mod's P/Invoke
+declarations exactly, outside Terraria. It runs in a second instead of a game launch,
+and it prints struct sizes, the marshalled default options, and every audio chunk:
+
+```bat
+cd tools\piper-smoketest
+dotnet run -- "%USERPROFILE%\Documents\My Games\Terraria\tModLoader\ChatVoice" "some text to speak"
+```
+
+This is what found the dropped-final-chunk bug. If a change touches `PiperNative.cs` or
+`Synthesize()`, run it here first — a wrong guess costs seconds rather than a reload.
+
 ### Cut a release
 
 `tools\make-release.ps1` builds the two data zips from the live data folder and prints
